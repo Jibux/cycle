@@ -3,31 +3,29 @@
 
 import os
 os.chdir(os.path.dirname(__file__))
+from bottle import app, run, post, request, response, get, route, template
 import bottle
-from bottle import run, post, request, response, get, route, template
 import json
 from pprint import pprint
-application = bottle.default_app()
 
-from bottle import route
-@route('/')
+application = bottle.app()
+
+
+@application.route('/')
 def hello():
-    return "Hello World!"
+    return "REST API for FertilityCare data"
 
-@route('/', method='OPTIONS')
-@route('/', method='POST')
+@application.route('/', method='OPTIONS')
+def trigger_method_options():
+    return 0
+
+@application.route('/', method='POST')
 def process():
-    if request.method == 'OPTIONS':
-        print("options")
-        response.set_header('Access-Control-Allow-Origin', '*')
-        response.set_header('Access-Control-Allow-Method', 'GET, POST, OPTIONS, PUT, PATCH, DELETE')
-        response.set_header('Access-Control-Allow-Headers', 'X-Requested-With,content-type')
-        response.set_header('Access-Control-Allow-Credentials', 'true')
-        return
-
     json_data = request.json['data']
-    print(json_data)
+    #print(json_data)
     #j = json.loads(json_data)
-    print(json_data['testdata']);
+    #print(json_data['testdata']);
     return 'OK'
  
+#run(host='localhost', port=1234, debug=True)
+
