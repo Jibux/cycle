@@ -44,23 +44,8 @@ def trigger_method_options():
 @route('/', method='POST')
 def process():
     pprint(request.json)
-    action = request.json['action']
-    print(action)
-    credentials = request.json['credentials']
-    if 'user_id' not in request.session:
-        print("New login")
-        login_status = login_user(credentials['email'], credentials['password'])
-        if login_status['status'] != 0:
-            print("Login failed: " + login_status['data'])
-            return bottle.HTTPResponse(status=500, body=login_status['data'])
-
-        request.session['user_id'] = login_status['data']
-    else:
-        print("Already logged in")
-
-    print("User id: " + str(request.session['user_id']))
-
-    response = do_action(action)
+    response = do_action(request.json)
+    
     #data = {'2019216': {'comment': '',
     #                  'creationDate': 1552735477141,
     #                  'frequency': 1,
@@ -111,17 +96,46 @@ def login_user(email, password):
     else:
         return return_status(0, user_id)
 
-def do_action(action):
-    return {
-       'GetData': get_data(),
-       'SetData': set_data()
-    }.get(action, unknown_action())
+def do_action(data):
+    action = data['action']
+    print("ACTION: " + action)
+    function = {
+       'login' : login,
+       'GetData': get_data,
+       'SetData': set_data
+    }.get(data['action'], unknown_action)
+    return function(data)
 
-def get_data():
-    return {}
+def check_user_logged_in():
+    return 'user_id' in request.session
 
-def set_data():
-    return {}
+def login(data):
+    credentials = data['credentials']
+    if not check_user_logged_in():
+        print("New login")
+        login_status = login_user(credentials['email'], credentials['password'])
+        if login_status['status'] != 0:
+            print("Login failed: " + login_status['data'])
+            return bottle.HTTPResponse(status=500, body=login_status['data'])
+
+        request.session['user_id'] = login_status['data']
+    else:
+        print("Already logged in")
+
+    print("User id: " + str(request.session['user_id']))
+
+
+def get_data(data):
+    if not check_user_logged_in():
+        return bottle.HTTPResponse(status=403, body='User not logged in')
+    else:
+        return {}
+
+def set_data(data):
+    if not check_user_logged_in():
+        return bottle.HTTPResponse(status=403, body='User not logged in')
+    else:
+        return {}
 
 def unknown_action():
     return bottle.HTTPResponse(status=500, body='Unknown action')
