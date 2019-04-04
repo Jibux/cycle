@@ -123,6 +123,7 @@ def login(data):
         print("Already logged in")
 
     print("User id: " + str(request.session['user_id']))
+    return {}
 
 
 def get_data(data):
