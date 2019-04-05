@@ -9,6 +9,7 @@ from beaker.middleware import SessionMiddleware
 import json
 from pprint import pprint
 import configparser
+import pathlib
 import mysql.connector
 
 # To disable for production
@@ -16,6 +17,8 @@ import mysql.connector
 #cgitb.enable()
 
 data_dir = '/home/data/FertilityCare/'
+users_data_dir = data_dir + '/users_data'
+user_data_file_name = 'user_data.json'
 application_dir = '/home/jbh/Development/cycle'
 
 session_opts = {
@@ -25,9 +28,7 @@ session_opts = {
     'session.auto': True
 }
 
-#application = bottle.app()
 application = SessionMiddleware(bottle.app(), session_opts)
-
 
 @hook('before_request')
 def setup_request():
@@ -63,7 +64,7 @@ def return_status(status, data=""):
 def get_user_query(table_name='users'):
     return ("SELECT id FROM " + table_name + " WHERE email=%s AND password=PASSWORD(%s) AND enabled=1")
 
-def login_user(email, password):
+def check_user_in_database(email, password):
     user_id = 0
     config = configparser.ConfigParser();
     config.read(application_dir + '/config.ini')
@@ -113,7 +114,7 @@ def login(data):
     credentials = data['credentials']
     if not check_user_logged_in():
         print("New login")
-        login_status = login_user(credentials['email'], credentials['password'])
+        login_status = check_user_in_database(credentials['email'], credentials['password'])
         if login_status['status'] != 0:
             print("Login failed: " + login_status['data'])
             return bottle.HTTPResponse(status=500, body=login_status['data'])
@@ -125,17 +126,36 @@ def login(data):
     print("User id: " + str(request.session['user_id']))
     return {}
 
+def get_user_data_dir():
+    return users_data_dir + '/' + str(request.session['user_id'])
+
+def get_user_data_file():
+    return get_user_data_dir() + '/' + user_data_file_name
 
 def get_data(data):
     if not check_user_logged_in():
         return bottle.HTTPResponse(status=403, body='User not logged in')
     else:
+        user_data_dir = get_user_data_dir()
+        user_data_file = get_user_data_file()
+        if not os.path.isdir(user_data_dir):
+            return {}
+        if not os.path.exists(user_data_file):
+            return {}
+        with open(user_data_file) as json_file:
+            return json.load(json_file)
         return {}
 
 def set_data(data):
     if not check_user_logged_in():
         return bottle.HTTPResponse(status=403, body='User not logged in')
     else:
+        user_data_dir = get_user_data_dir()
+        user_data_file = get_user_data_file()
+        if not os.path.isdir(user_data_dir):
+            pathlib.Path(user_data_dir).mkdir(parents=True, exist_ok=True)
+        with open(user_data_file, 'w+') as json_file:
+            json.dump(data, json_file)
         return {}
 
 def unknown_action():
