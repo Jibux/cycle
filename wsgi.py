@@ -16,7 +16,7 @@ import mysql.connector
 #import cgitb
 #cgitb.enable()
 
-data_dir = '/home/data/FertilityCare/'
+data_dir = '/home/data/FertilityCare'
 users_data_dir = data_dir + '/users_data'
 user_data_file_name = 'user_data.json'
 application_dir = '/home/jbh/Development/cycle'
@@ -44,18 +44,8 @@ def trigger_method_options():
 
 @route('/', method='POST')
 def process():
-    pprint(request.json)
+    # pprint(request.json)
     response = do_action(request.json)
-    
-    #data = {'2019216': {'comment': '',
-    #                  'creationDate': 1552735477141,
-    #                  'frequency': 1,
-    #                  'misc': {},
-    #                  'modificationDate': 1553636161261,
-    #                  'mucus': 1,
-    #                  'mucusExtended': {},
-    #                  'period': -1,
-    #                  'sticker': '0'}}
     return response
 
 def return_bottle(status, data=""):
@@ -63,7 +53,7 @@ def return_bottle(status, data=""):
 
 def return_status(status=0, data=""):
     data_to_return = { 'status': status, 'data': data }
-    print("Return status:")
+    print("Return status: ")
     pprint(data_to_return)
     return data_to_return
 
