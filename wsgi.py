@@ -49,7 +49,7 @@ def process():
     return response
 
 def return_bottle(status, data=""):
-    bottle.HTTPResponse(status=status, body=data)
+    return bottle.HTTPResponse(status=status, body=data)
 
 def return_status(status=0, data=""):
     data_to_return = { 'status': status, 'data': data }
