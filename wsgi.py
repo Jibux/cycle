@@ -3,14 +3,15 @@
 
 import os
 os.chdir(os.path.dirname(__file__))
+import logging
 from bottle import app, hook, run, post, request, response, get, route, template, HTTPResponse
 import bottle
 from beaker.middleware import SessionMiddleware
 import json
-from pprint import pprint
 import configparser
 import pathlib
 import mysql.connector
+from pprint import pformat
 
 # To disable for production
 #import cgitb
@@ -20,9 +21,17 @@ data_dir = '/home/data/FertilityCare'
 users_data_dir = data_dir + '/users_data'
 user_data_file_name = 'user_data.json'
 application_dir = '/home/jbh/Development/cycle'
+www_user_dir = '/home/www/jb_dedi_web'
+www_user_log_dir = www_user_dir + '/logs'
+www_user_log_file = www_user_log_dir + '/python.log'
+
+# Log level:
+# DEBUG, INFO, WARNING, ERROR, CRITICAL
+logging.basicConfig(filename=www_user_log_file,level=logging.DEBUG)
 
 session_opts = {
     'session.type': 'file',
+    # session.cookie_expires in seconds
     'session.cookie_expires': 300,
     'session.data_dir': data_dir + '/sessions',
     'session.auto': True
@@ -44,7 +53,6 @@ def trigger_method_options():
 
 @route('/', method='POST')
 def process():
-    # pprint(request.json)
     response = do_action(request.json)
     return response
 
@@ -53,8 +61,8 @@ def return_bottle(status, data=""):
 
 def return_status(status=0, data=""):
     data_to_return = { 'status': status, 'data': data }
-    print("Return status: ")
-    pprint(data_to_return)
+    logging.debug("Return status: ")
+    logging.debug(pformat(data_to_return))
     return data_to_return
 
 def get_user_query(table_name='users'):
@@ -95,9 +103,11 @@ def check_user_in_database(email, password):
 
 def do_action(data):
     action = data['action']
-    print("ACTION: " + action)
+    logging.debug("ACTION: " + action)
     if action == 'login':
         return login(data['credentials'])
+    elif action == 'logout':
+        return logout()
     elif action == 'GetData':
         return get_data()
     elif action == 'SetData':
@@ -110,18 +120,29 @@ def check_user_logged_in():
 
 def login(credentials):
     if not check_user_logged_in():
-        print("New login")
+        logging.debug("New login")
         login_status = check_user_in_database(credentials['email'], credentials['password'])
         if login_status['status'] != 0:
-            print("Login failed: " + login_status['data'])
+            logging.debug("Login failed: " + login_status['data'])
             return return_bottle(500, login_status['data'])
 
         request.session['user_id'] = login_status['data']
     else:
-        print("Already logged in")
+        logging.debug("Login: already logged in")
 
-    print("User id: " + str(request.session['user_id']))
+    logging.debug("User id: " + str(request.session['user_id']))
     return return_status()
+
+def reset_session():
+    request.session.delete()
+
+def logout():
+    if not check_user_logged_in():
+        logging.debug("Logout: already logged out")
+        return return_status()
+    else:
+        reset_session()
+        return return_status()
 
 def get_user_data_dir():
     return users_data_dir + '/' + str(request.session['user_id'])
@@ -158,5 +179,5 @@ def set_data(data):
 def unknown_action():
     return return_bottle(500, 'Unknown action')
 
-run(host='localhost', port=1234, debug=True, app=application)
+#run(host='localhost', port=1234, debug=True, app=application)
 
