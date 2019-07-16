@@ -25,16 +25,28 @@ www_user_dir = '/home/www/jb_dedi_web'
 www_user_log_dir = www_user_dir + '/logs'
 www_user_log_file = www_user_log_dir + '/python.log'
 
+config = configparser.ConfigParser()
+config.read(application_dir + '/config.ini')
+session_encrypt_key = config['session']['encrypt_key']
+session_validate_key = config['session']['validate_key']
+
 # Log level:
 # DEBUG, INFO, WARNING, ERROR, CRITICAL
 logging.basicConfig(filename=www_user_log_file,level=logging.DEBUG)
 
 session_opts = {
-    'session.type': 'file',
+    'session.type': 'cookie',
     # session.cookie_expires in seconds
-    'session.cookie_expires': 300,
-    'session.data_dir': data_dir + '/sessions',
-    'session.auto': True
+    # 'session.cookie_expires': 10,
+    'session.save_accessed_time': True,
+    # Invalidate session if not connected after 150 days
+    'session.timeout': 3600 * 24 * 150,
+    # 'session.data_dir': data_dir + '/sessions',
+    'session.auto': True,
+    'session.httponly': True,
+    'session.secure': True,
+    'session.validate_key': session_validate_key,
+    'session.encrypt_key': session_encrypt_key
 }
 
 application = SessionMiddleware(bottle.app(), session_opts)
@@ -70,8 +82,6 @@ def get_user_query(table_name='users'):
 
 def check_user_in_database(email, password):
     user_id = 0
-    config = configparser.ConfigParser();
-    config.read(application_dir + '/config.ini')
     db_config = {
         'user': config['DB']['db_user'],
         'password': config['DB']['db_password'],
@@ -179,5 +189,5 @@ def set_data(data):
 def unknown_action():
     return return_bottle(500, 'Unknown action')
 
-#run(host='localhost', port=1234, debug=True, app=application)
+run(host='localhost', port=1234, debug=True, app=application)
 
