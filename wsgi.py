@@ -115,7 +115,7 @@ def do_action(data):
     action = data['action']
     logging.debug("ACTION: " + action)
     if action == 'login':
-        return login(data['credentials'])
+        return login(data['data'])
     elif action == 'logout':
         return logout()
     elif action == 'GetData':
@@ -134,7 +134,7 @@ def login(credentials):
         login_status = check_user_in_database(credentials['email'], credentials['password'])
         if login_status['status'] != 0:
             logging.debug("Login failed: " + login_status['data'])
-            return return_bottle(500, login_status['data'])
+            return return_bottle(403, login_status['data'])
 
         request.session['user_id'] = login_status['data']
     else:
